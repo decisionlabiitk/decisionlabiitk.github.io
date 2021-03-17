@@ -1,0 +1,30 @@
+form
+{
+    justify-content: center;
+    text-align: center;
+}
+
+p
+{
+    justify-content: center;
+    text-align: center;
+    margin-right: 5%;
+}
+
+div
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+label
+{
+    margin-right: 2%;
+}
+
+button
+{
+    height: 30px;
+    width: 100px;
+}

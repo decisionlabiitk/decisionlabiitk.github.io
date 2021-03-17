@@ -1,9 +1,36 @@
 //  Canvas Attributes Set
 let canvas = document.querySelector("canvas")
-canvas.setAttribute("width", canvas.parentNode.offsetWidth)
-canvas.setAttribute("height", canvas.parentNode.offsetHeight)
+canvas.style.display = "none"
+canvas.setAttribute("width", 1250)
+canvas.setAttribute("height", 1000)
 let ctx = canvas.getContext("2d")   // Get Draw Context
 ctx.font = "30px Arial" // Set Font For UI
+
+// Form
+let form_data = []
+document.querySelector("form > button").addEventListener("click",
+    (e) =>
+    {
+        e.preventDefault()
+        document.querySelectorAll("label > input").forEach(
+            (b) =>
+            {
+                if(b.checked)
+                    form_data.push({name: b.name, value: b.value})
+            }
+        )
+        document.querySelector("form").remove()
+        canvas.style.display = "block"
+    }
+)
+
+// Difficulty Slider
+let difficulty = document.querySelector("input")
+let sub = document.querySelector("button")
+let p = document.querySelector("p")
+p.style.display = "none"
+sub.style.display = "none"
+difficulty.style.display = "none"
 
 //  Colour Entire Screen Green
 ctx.beginPath()
@@ -12,9 +39,9 @@ ctx.fillRect(0, 0, canvas.width, canvas.height)
 ctx.stroke()
 
 //  X, Y Partitions
-let col = canvas.width/6    // Width of one partition
-let row = canvas.height/3   // Height of one partition
-
+let col = 1250/6    // Width of one partition
+let row = 750/3   // Height of one partition
+canvas.width
 //  Create a Video element to play during foraging
 let vid = document.createElement("video")
 vid.src = "harvest.mp4"
@@ -27,12 +54,12 @@ bush.src = 'berry.png'
 // Set Bush Attributes
 let bushes = 
 [
-    {id: 1, x: col*2+col/4, y: col/4, e: 0, r: 0, empty: true},
-    {id: 2, x: col*3+col/4, y: col/4, e: 0, r: 80, empty: false},
-    {id: 6, x: col*2+col/4 - col*Math.cos(Math.PI/3), y: col/4 + col*Math.sin(Math.PI/3), e: 0, r: 0, empty: true},
-    {id: 3, x: col*3+col/4 + col*Math.cos(Math.PI/3), y: col/4 + col*Math.sin(Math.PI/3), e: 0, r: 80, empty: false},
-    {id: 5, x: col*2+col/4, y: col/4 + 2*col*Math.sin(Math.PI/3), e: 0, r: 80, empty: false},
-    {id: 4, x: col*3+col/4, y: col/4 + 2*col*Math.sin(Math.PI/3), e: 0, r: 0, empty: true}
+    {id: 1, x: 775, y: 110, e: 0, r: 0, empty: true},
+    {id: 2, x: 475, y: 110, e: 0, r: 80, empty: false},
+    {id: 6, x: 325, y: 450, e: 0, r: 0, empty: true},
+    {id: 3, x: 475, y: 710, e: 0, r: 80, empty: false},
+    {id: 5, x: 775, y: 710, e: 0, r: 80, empty: false},
+    {id: 4, x: 925, y: 450, e: 0, r: 0, empty: true}
 ]
 // Draw Bush on load
 bush.addEventListener(
@@ -42,35 +69,28 @@ bush.addEventListener(
         bushes.forEach(
             rect => 
             {
-                ctx.drawImage(bush, rect.x, rect.y, col/2, col/2) // (image, pos-x, pos-y, width, height)
+                ctx.beginPath()
+                ctx.fillStyle = "black"
+                ctx.rect(rect.x, rect.y, 100, 100)
+                ctx.stroke()
+                ctx.drawImage(bush, rect.x, rect.y, 100, 100) // (image, pos-x, pos-y, width, height)
             }    
         )
     }
 )
         
-// Draw Player
-let player = new Image()
-player.src = 'man.png'
-player.addEventListener(
-    "load",
-    function()
-    {
-        ctx.drawImage(player, col*3 - col/4, col/4 + col*Math.sin(Math.PI/3), col/2, col/2) // (image, pos-x, pos-y, width, height)
-    }
-)
-   
+
 //  Check if Mouse click is inside bush
 function isInside(rw, rh, rx, ry, x, y)
 {
     return x <= rx+rw && x >= rx && y <= ry+rh && y >= ry   // Get Click Inside a Bush
 }
-            
-            
+
+
 //  Consatants Defined
-const dt = 6    // Time between adjacent bush
-const speed = col/(100*dt)
+const speed = 300/(6*100)
 let dest = -1   // Destination Bush
-let p_pos = {x: col*3 - col/4, y: col/4 + col*Math.sin(Math.PI/3)}  // Player Position
+let p_pos = {x: 625, y: 450}  // Player Position
 let action = ""     // Action
 let skip = {x: 0, y: 0}     // X, Y parts of speed
 let c = 0   // Counter For Timeskip
@@ -81,8 +101,20 @@ let state = 'initiate'  // State of Game
 let end = {m: 3, s: 0}  //  End time of Single Playthrough
 let plays = 1   // Playthrough Count
 let download = false    // So csv Downloads Just once
-    
-    
+let get_difficulty = true
+let diff = 0;
+
+// Draw Player
+let player = new Image()
+player.src = 'man.png'
+player.addEventListener(
+    "load",
+    function()
+    {
+        ctx.drawImage(player, p_pos.x, p_pos.y, 100, 100) // (image, pos-x, pos-y, width, height)
+    }
+)
+
 // Create a Audio Element for Background Noise
 var audio = document.createElement("AUDIO")
 document.body.appendChild(audio);
@@ -99,11 +131,11 @@ document.body.addEventListener("mousemove", // Add Mouse Movement as audio start
 //  Set Event for Fixing a Destination Bush
 canvas.addEventListener("click", (e) =>
     {
-        let pos = {x: e.clientX, y: e.clientY}  // Click Position
+        let pos = {x: e.clientX - canvas.offsetLeft, y: e.clientY - canvas.offsetTop}  // Click Position
         bushes.forEach( // Check for each Bush
             (rect, i) =>
             {
-                if(isInside(col/2, col/2, rect.x, rect.y, pos.x, pos.y) && action !== 'moving')
+                if(isInside(100, 100, rect.x, rect.y, pos.x, pos.y) && action !== 'moving' && dest !== i)
                 {
                     action = "moving"
                     dest = i
@@ -112,6 +144,12 @@ canvas.addEventListener("click", (e) =>
                     const h = Math.sqrt(p*p + b*b)
                     skip.x = speed * p/h
                     skip.y = speed * b/h                                   
+                }
+                else if(!(dest === -1) && bushes[dest].x === p_pos.x && bushes[dest].y === p_pos.y && isInside(100, 100, bushes[dest].x, bushes[dest].y, pos.x, pos.y))
+                {    
+                    state = 'start'
+                    action = 'forage'
+                    vid.play()
                 }
             }
         )
@@ -124,23 +162,11 @@ document.addEventListener("keypress", (e) =>
         if(e.code === 'Space')
         {
             state = 'start'
-            if(isInside(col/2, col/2, bushes[dest].x, bushes[dest].y, p_pos.x, p_pos.y))
+            if(isInside(100, 100, bushes[dest].x, bushes[dest].y, p_pos.x, p_pos.y))
             {    
                 action = 'forage'
                 vid.play()
             }
-        }
-    }
-)
-
-document.addEventListener("click",  // For Click 
-    (e) =>
-    {
-        if(bushes[dest].x === p_pos.x && bushes[dest].y === p_pos.y && isInside(col/2, col/2, bushes[dest].x, bushes[dest].y, e.clientX, e.clientY))
-        {    
-            state = 'start'
-            action = 'forage'
-            vid.play()
         }
     }
 )
@@ -197,16 +223,27 @@ function download_csv(data) {
     hiddenElement.click();
 }
 
-// Random Outputs
-console.log('speed: ' + speed)
-console.log('')
+//  Submission Button
+sub.addEventListener("click",
+    (e) =>
+    {
+        get_difficulty = false
+        diff = difficulty.value
+        sub.style.display = "none"
+        difficulty.style.display = "none"
+        p.style.display = "none"
+    }
+)
 
 //  Update Loop
 function draw()
 {
     let loading = bush.complete && player.complete  // Pause If Resources Not Loaded
     if(!loading)
-    alert("loading")
+    {
+        alert("loading")
+        return
+    }
     
     // Clear Screen
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -241,34 +278,105 @@ function draw()
             ctx.fillText("Score: " + score, col/4, row/2.5)
             if(minutes === end.m && seconds === end.s)
             {
-                if(plays === 2)
+                switch(plays)
                 {
-                    state = 'end'
-                    return
+                    case 1:
+                        state = "change"
+                        ++plays
+                        data.push([-1, -1, score])
+                        audio.pause()
+                        //stress.pause()
+                        end.m = 3
+                        bush.src = "bush.png"
+                        bushes = 
+                        [
+                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
+                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
+                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
+                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
+                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                        ]
+                        return
+
+                    case 2:
+                        state = "change"
+                        ++plays
+                        data.push([-1, -1, score])
+                        audio.pause()
+                        //stress.pause()
+                        bush.src = "bush.png"
+                        bushes = 
+                        [
+                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
+                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
+                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
+                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
+                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                        ]
+                        return
+
+                    case 3:
+                        state = "change"
+                        ++plays
+                        data.push([-1, -1, score])
+                        audio.pause()
+                        //stress.pause()
+                        bush.src = "bush.png"
+                        bushes = 
+                        [
+                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
+                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
+                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
+                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
+                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                        ]
+                        return
+
+                    case 4:
+                        state = "change"
+                        ++plays
+                        data.push([-1, -1, score])
+                        audio.pause()
+                        //stress.pause()
+                        bush.src = "bush.png"
+                        bushes = 
+                        [
+                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
+                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
+                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
+                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
+                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
+                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                        ]
+                        return
+
+                    default:
+                        audio.pause()
+                        //stress.pause()
+                        tc = 0;
+                        state = "end"
+                        return
                 }
-                ++plays
-                data.push([-1, -1, score])
-                state = 'change'
-                bush.src = "bush.png"
             }
             break
             
         case 'change':
-            ctx.clearRect(0, 0, canvas.width, canvas.height)
             action = ''
             tc = 0
-            p_pos = {x: col*3 - col/4, y: col/4 + col*Math.sin(Math.PI/3)}
+            p_pos = {x: 625, y: 450}
             score = 0
             // Update End Condition
-            bushes = 
-            [
-                {id: 1, x: col*2+col/4, y: col/4, e: 0, r: 80, empty: false},
-                {id: 2, x: col*3+col/4, y: col/4, e: 0, r: 80, empty: false},
-                {id: 6, x: col*2+col/4 - col*Math.cos(Math.PI/3), y: col/4 + col*Math.sin(Math.PI/3), e: 0, r: 80, empty: false},
-                {id: 3, x: col*3+col/4 + col*Math.cos(Math.PI/3), y: col/4 + col*Math.sin(Math.PI/3), e: 0, r: 80, empty: false},
-                {id: 5, x: col*2+col/4, y: col/4 + 2*col*Math.sin(Math.PI/3), e: 0, r: 80, empty: false},
-                {id: 4, x: col*3+col/4, y: col/4 + 2*col*Math.sin(Math.PI/3), e: 0, r: 80, empty: false}
-            ]
             ctx.fillStyle = 'black'
             ctx.fillText("We will now move to a new forest to forage.", col*2, row)
             ctx.fillText("Press space to continue foraging.", col*2, row+row/4)
@@ -279,10 +387,22 @@ function draw()
             {
                 download_csv(data)
                 download = true
-                console.log(data)
             }
-            ctx.fillStyle = 'black'
-            ctx.fillText("Thank you for playing.", col*2, row)
+            if(get_difficulty)
+            {
+                ctx.fillStyle = 'black'
+                ctx.fillText("Please give difficulty.", col*2, row)
+                sub.style.display = "block"
+                difficulty.style.display = "block"
+                sub.style.display = "block"
+                p.style.display = "block"
+                p.textContent = difficulty.value
+            }
+            else
+            {
+                ctx.fillStyle = 'black'
+                ctx.fillText("Thank you for playing.", col*2, row)
+            }
             return
     }
     
@@ -292,7 +412,11 @@ function draw()
             bushes.forEach(
                 rect => 
                 {
-                    ctx.drawImage(bush, rect.x, rect.y, col/2, col/2) // (image, pos-x, pos-y, width, height)
+                    ctx.beginPath()
+                    ctx.fillStyle = "black"
+                    ctx.rect(rect.x, rect.y, 100, 100)
+                    ctx.stroke()
+                    ctx.drawImage(bush, rect.x, rect.y, 100, 100) // (image, pos-x, pos-y, width, height)
                 }    
             )
                 
@@ -301,12 +425,13 @@ function draw()
                 action = ''
                 p_pos.x = bushes[dest].x
                 p_pos.y = bushes[dest].y
+                ctx.drawImage(player, p_pos.x, p_pos.y, 100, 100)
                 break
             }
 
             p_pos.x += skip.x
             p_pos.y += skip.y
-            ctx.drawImage(player, p_pos.x, p_pos.y, col/2, col/2) // (image, pos-x, pos-y, width, height)
+            ctx.drawImage(player, p_pos.x, p_pos.y, 100, 100) // (image, pos-x, pos-y, width, height)
             
             break
 
@@ -325,7 +450,7 @@ function draw()
                 ctx.fillText("+" + bushes[dest].r, bushes[dest].x, bushes[dest].y)
             }
             else
-            ctx.drawImage(vid, bushes[dest].x, bushes[dest].y, col/2, col/2)
+            ctx.drawImage(vid, bushes[dest].x, bushes[dest].y, 100, 100)
             
             if(c === 500)
             {
@@ -339,11 +464,15 @@ function draw()
             bushes.forEach(
                 rect => 
                 {
-                    ctx.drawImage(bush, rect.x, rect.y, col/2, col/2) // (image, pos-x, pos-y, width, height)
+                    ctx.beginPath()
+                    ctx.fillStyle = "black"
+                    ctx.rect(rect.x, rect.y, 100, 100)
+                    ctx.stroke()
+                    ctx.drawImage(bush, rect.x, rect.y, 100, 100) // (image, pos-x, pos-y, width, height)
                 }    
             )
 
-            ctx.drawImage(player, p_pos.x, p_pos.y, col/2, col/2) // (image, pos-x, pos-y, width, height)
+            ctx.drawImage(player, p_pos.x, p_pos.y, 100, 100) // (image, pos-x, pos-y, width, height)
     }
     
     tc++
