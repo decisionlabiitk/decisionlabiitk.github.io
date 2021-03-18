@@ -7,6 +7,9 @@ let ctx = canvas.getContext("2d")   // Get Draw Context
 ctx.font = "30px Arial" // Set Font For UI
 document.querySelector(".psy_form").style.display = "none"
 
+// Prevent game start
+let game_start = false
+
 // Consent And Details Form
 let client_name = ''
 let gender = ''
@@ -18,7 +21,7 @@ document.querySelector(".personal_details > button").addEventListener("click",
         if(document.querySelector("#consent").checked)
         {
             client_name = document.querySelector("#client_name").value
-            gender = document.querySelector("#age").value
+            age = document.querySelector("#client_age").value
             document.querySelectorAll(".gen").forEach(
                 (g) =>
                 {
@@ -26,7 +29,6 @@ document.querySelector(".personal_details > button").addEventListener("click",
                         gender = g.value
                 }
             )
-            console.log(gender, client_name, age)
             document.querySelector(".personal_details").remove()
             document.querySelector(".psy_form").style.display = "block"
         }
@@ -81,11 +83,11 @@ bush.src = 'berry.png'
 // Set Bush Attributes
 let bushes = 
 [
-    {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: false},
-    {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.1, empty: false},
-    {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
-    {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.1, empty: false},
     {id: 0, x: 775, y: 710, e: 0, r: 70, rate: 1.1, empty: true},
+    {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.1, empty: false},
+    {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
+    {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.1, empty: false},
+    {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: false},
     {id: 5, x: 925, y: 450, e: 0, r: 0, rate: 1.1, empty: true}
 ]
 // Draw Bush on load
@@ -114,6 +116,7 @@ function isInside(rw, rh, rx, ry, x, y)
 const speed = 300/(6*100)
 let dest = -1   // Destination Bush
 let p_pos = {x: 625, y: 450}  // Player Position
+let pos = {}
 let action = ""     // Action
 let skip = {x: 0, y: 0}     // X, Y parts of speed
 let c = 0   // Counter For Timeskip
@@ -121,9 +124,9 @@ let tc = 0  // Counter For Time
 let score = 0
 let data = []   // Data Collected in array form
 let state = 'initiate'  // State of Game
-let end = {m: 0, s: 3}  //  End time of Single Playthrough
+let end = {m: 3, s: 0}  //  End time of Single Playthrough
 let plays = 1   // Playthrough Count
-let download = false    // So csv Downloads Just once
+let collected = false    // So csv Downloads Just once
 let get_difficulty = true
 let diff = [];
 
@@ -154,7 +157,7 @@ document.body.addEventListener("mousemove", // Add Mouse Movement as audio start
 //  Set Event for Fixing a Destination Bush
 canvas.addEventListener("click", (e) =>
     {
-        let pos = {x: e.clientX - canvas.offsetLeft, y: e.clientY - canvas.offsetTop}  // Click Position
+        pos = {x: e.clientX - canvas.getBoundingClientRect().left, y: e.clientY - canvas.getBoundingClientRect().top}  // Click Position
         bushes.forEach( // Check for each Bush
             (rect, i) =>
             {
@@ -182,7 +185,14 @@ canvas.addEventListener("click", (e) =>
 //  Set Event for Foraging
 document.addEventListener("keypress", (e) =>
     {
-        if(e.code === 'Space')
+        switch(state)
+        {
+            case 'initiate':
+                state = 'initiate2'
+                return
+        }
+        
+        if(e.code === 'Space' && state !== 'end' && canvas.style.display !== 'none')
         {
             state = 'start'
             if(isInside(100, 100, bushes[dest].x, bushes[dest].y, p_pos.x, p_pos.y))
@@ -274,22 +284,30 @@ function draw()
     ctx.fillStyle = "green"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.stroke()
-    
+
     switch(state)
     {
         case 'initiate':
+            tc = 0;
             ctx.fillStyle = 'black'
             ctx.fillText("Welcome To The Virtual Foraging Task", col, row/4)
-            ctx.fillText("You are in the center of a field surrounded by 6 berry shrubs.", col, row/2)
-            ctx.fillText("All the shrubs are equi distant from you and from their neighbours.", col, 3*row/4)
-            ctx.fillText("Click on the shrub you want to pick beries from.", col, row)
-            ctx.fillText("You have a total of 6 mins to harvest as much berries as you can.", col, row+row/4)
-            ctx.fillText("Travel Time is proportional to the distance between shrubs.", col, row+row/2)
-            ctx.fillText("For any adjacent shrub, Travel Time costs 6 sec.", col, row+3*row/4)
-            ctx.fillText("After pressing Spacebar while on a shrub, wait for the reward to popup.", col, row*2)
-            ctx.fillText("For any shrub, Harvesting Time costs 5 sec.", col, row*2+row/4)
-            ctx.fillText("Happy Foraging.", col, row*2+row/2)
-            ctx.fillText("Press space to continue", col, row*2+3*row/4)
+            ctx.fillText("All the shrubs are equi distant from you and from their neighbours.", col, row/2)
+            ctx.fillText("Once harvested the shrubs get replenished with different rates.", col, 3*row/4)
+            ctx.fillText("All shrubs will not give you berries.", col, row)
+            ctx.fillText("You have a total of 3 mins to harvest as much berries as you can.", col, row+row/4)
+            ctx.fillText("All shrubs will not give you berries.", col, row+row/2)
+            ctx.fillText("Press space to continue", col, row+3*row/4)
+            return
+
+        case 'initiate2':
+            tc = 0;
+            ctx.fillStyle = 'black'
+            ctx.fillText("Click on the shrub you want to pick beries from to move there.", col, row/4)
+            ctx.fillText("Press Spacebar while on a shrub to collect berries.", col, row/2)
+            ctx.fillText("You have a total of 3 mins to harvest as much berries as you can.", col, 3*row/4)
+            ctx.fillText("For any adjacent shrub, Travel Time costs 6 sec.", col, row)
+            ctx.fillText("For any shrub, Harvesting Time costs 5 sec.", col, row+row/4)
+            ctx.fillText("Press space to continue", col, row+row/2)
             return
 
         case 'start':
@@ -313,14 +331,14 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.1, empty: true},
-                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: false},
-                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.1, empty: false},
-                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: true},
-                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.1, empty: true},
                             {id: 0, x: 775, y: 812, e: 0, r: 80, rate: 1.1, empty: false},
+                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.1, empty: false},
+                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: false},
+                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: false},
                             {id: 7, x: 987, y: 600, e: 0, r: 80, rate: 1.1, empty: true},
-                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: false}
                         ]
                         return
 
@@ -334,11 +352,11 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: false},
-                            {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.1, empty: true},
-                            {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
-                            {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.2, empty: false},
                             {id: 0, x: 775, y: 710, e: 0, r: 70, rate: 1.1, empty: false},
+                            {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.3, empty: false},
+                            {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.1, empty: true},
+                            {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: false},
                             {id: 5, x: 925, y: 450, e: 0, r: 0, rate: 1.1, empty: true}
                         ]
                         return
@@ -353,14 +371,14 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.1, empty: false},
-                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: true},
-                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.2, empty: false},
-                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: true},
-                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.2, empty: false},
                             {id: 0, x: 775, y: 812, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.3, empty: false},
+                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.3, empty: false},
+                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.1, empty: false},
+                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: false},
                             {id: 7, x: 987, y: 600, e: 0, r: 80, rate: 1.1, empty: true},
-                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: false}
                         ]
                         return
 
@@ -374,11 +392,11 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: true},
-                            {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.3, empty: false},
-                            {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
-                            {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.1, empty: true},
                             {id: 0, x: 775, y: 710, e: 0, r: 70, rate: 1.2, empty: false},
+                            {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.1, empty: true},
+                            {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.3, empty: false},
+                            {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: true},
                             {id: 5, x: 925, y: 450, e: 0, r: 0, rate: 1.1, empty: false}
                         ]
                         return
@@ -393,18 +411,20 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.3, empty: false},
-                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: true},
-                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.2, empty: false},
-                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: false},
-                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.1, empty: false},
                             {id: 0, x: 775, y: 812, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.1, empty: false},
+                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.2, empty: false},
+                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.3, empty: false},
+                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.4, empty: false},
+                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: true},
                             {id: 7, x: 987, y: 600, e: 0, r: 80, rate: 1.1, empty: true},
-                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: true}
                         ]
                         return
 
                     default:
+                        ++plays
+                        data.push([-1, -1, score])
                         get_difficulty = true
                         audio.pause()
                         //stress.pause()
@@ -416,6 +436,7 @@ function draw()
             break
             
         case 'change':
+            dest = -1
             action = ''
             tc = 0
             p_pos = {x: 625, y: 450}
@@ -452,10 +473,10 @@ function draw()
             }
             else
             {
-                if(!download)
+                if(!collected)
                 {
-                    download_csv(data)
-                    download = true
+                    collect_data()
+                    collected = true
                 }
                 ctx.fillStyle = 'black'
                 ctx.fillText("Thank you for playing.", col*2, row)
@@ -527,3 +548,14 @@ function draw()
     tc++
 }
 setInterval(draw, 10)
+
+let final_data = {}
+function collect_data()
+{
+    final_data.personal_details = {name: client_name, gender: gender, age: age}
+    final_data.difficulties = diff
+    final_data.psy_details = form_data
+    final_data.collection_data = data
+
+    console.log(final_data)
+}
