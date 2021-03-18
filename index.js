@@ -5,10 +5,37 @@ canvas.setAttribute("width", 1250)
 canvas.setAttribute("height", 1000)
 let ctx = canvas.getContext("2d")   // Get Draw Context
 ctx.font = "30px Arial" // Set Font For UI
+document.querySelector(".psy_form").style.display = "none"
 
-// Form
+// Consent And Details Form
+let client_name = ''
+let gender = ''
+let age = 0
+document.querySelector(".personal_details > button").addEventListener("click",
+    (e) =>
+    {
+        e.preventDefault()
+        if(document.querySelector("#consent").checked)
+        {
+            client_name = document.querySelector("#client_name").value
+            gender = document.querySelector("#age").value
+            document.querySelectorAll(".gen").forEach(
+                (g) =>
+                {
+                    if(g.checked)
+                        gender = g.value
+                }
+            )
+            console.log(gender, client_name, age)
+            document.querySelector(".personal_details").remove()
+            document.querySelector(".psy_form").style.display = "block"
+        }
+    }
+)
+
+// Psychology Form
 let form_data = []
-document.querySelector("form > button").addEventListener("click",
+document.querySelector(".psy_form > button").addEventListener("click",
     (e) =>
     {
         e.preventDefault()
@@ -25,9 +52,9 @@ document.querySelector("form > button").addEventListener("click",
 )
 
 // Difficulty Slider
-let difficulty = document.querySelector("input")
-let sub = document.querySelector("button")
-let p = document.querySelector("p")
+let difficulty = document.querySelector("#slider")
+let sub = document.querySelector("body > div > button")
+let p = document.querySelector("#diff")
 p.style.display = "none"
 sub.style.display = "none"
 difficulty.style.display = "none"
@@ -54,12 +81,12 @@ bush.src = 'berry.png'
 // Set Bush Attributes
 let bushes = 
 [
-    {id: 1, x: 775, y: 110, e: 0, r: 0, empty: true},
-    {id: 2, x: 475, y: 110, e: 0, r: 80, empty: false},
-    {id: 6, x: 325, y: 450, e: 0, r: 0, empty: true},
-    {id: 3, x: 475, y: 710, e: 0, r: 80, empty: false},
-    {id: 5, x: 775, y: 710, e: 0, r: 80, empty: false},
-    {id: 4, x: 925, y: 450, e: 0, r: 0, empty: true}
+    {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: false},
+    {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.1, empty: false},
+    {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
+    {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.1, empty: false},
+    {id: 0, x: 775, y: 710, e: 0, r: 70, rate: 1.1, empty: true},
+    {id: 5, x: 925, y: 450, e: 0, r: 0, rate: 1.1, empty: true}
 ]
 // Draw Bush on load
 bush.addEventListener(
@@ -69,10 +96,6 @@ bush.addEventListener(
         bushes.forEach(
             rect => 
             {
-                ctx.beginPath()
-                ctx.fillStyle = "black"
-                ctx.rect(rect.x, rect.y, 100, 100)
-                ctx.stroke()
                 ctx.drawImage(bush, rect.x, rect.y, 100, 100) // (image, pos-x, pos-y, width, height)
             }    
         )
@@ -98,11 +121,11 @@ let tc = 0  // Counter For Time
 let score = 0
 let data = []   // Data Collected in array form
 let state = 'initiate'  // State of Game
-let end = {m: 3, s: 0}  //  End time of Single Playthrough
+let end = {m: 0, s: 3}  //  End time of Single Playthrough
 let plays = 1   // Playthrough Count
 let download = false    // So csv Downloads Just once
 let get_difficulty = true
-let diff = 0;
+let diff = [];
 
 // Draw Player
 let player = new Image()
@@ -197,7 +220,7 @@ function update(patch)
             else if(b.empty)
                 return
             else
-                b.r = b.r <= 0 ? 3 : b.r>=100 || b.r*1.3 >= 100 ? 100 : Math.floor(b.r*1.3)
+                b.r = b.r <= 0 ? 3 : b.r>=100 || b.r*b.rate >= 100 ? 100 : Math.floor(b.r*b.rate)
 
             bushes[i].r = b.r
             bushes[i].e = b.e
@@ -228,7 +251,7 @@ sub.addEventListener("click",
     (e) =>
     {
         get_difficulty = false
-        diff = difficulty.value
+        diff.push(difficulty.value)
         sub.style.display = "none"
         difficulty.style.display = "none"
         p.style.display = "none"
@@ -281,27 +304,28 @@ function draw()
                 switch(plays)
                 {
                     case 1:
+                        get_difficulty = true
                         state = "change"
                         ++plays
                         data.push([-1, -1, score])
                         audio.pause()
                         //stress.pause()
-                        end.m = 3
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
-                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
-                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
-                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
-                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: false},
+                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.1, empty: false},
+                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 0, x: 775, y: 812, e: 0, r: 80, rate: 1.1, empty: false},
+                            {id: 7, x: 987, y: 600, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: false}
                         ]
                         return
 
                     case 2:
+                        get_difficulty = true
                         state = "change"
                         ++plays
                         data.push([-1, -1, score])
@@ -310,18 +334,17 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
-                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
-                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
-                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
-                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                            {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: false},
+                            {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.1, empty: true},
+                            {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.2, empty: false},
+                            {id: 0, x: 775, y: 710, e: 0, r: 70, rate: 1.1, empty: false},
+                            {id: 5, x: 925, y: 450, e: 0, r: 0, rate: 1.1, empty: true}
                         ]
                         return
 
                     case 3:
+                        get_difficulty = true
                         state = "change"
                         ++plays
                         data.push([-1, -1, score])
@@ -330,18 +353,19 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
-                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
-                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
-                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
-                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.1, empty: false},
+                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.2, empty: false},
+                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.2, empty: false},
+                            {id: 0, x: 775, y: 812, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 7, x: 987, y: 600, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: false}
                         ]
                         return
 
                     case 4:
+                        get_difficulty = true
                         state = "change"
                         ++plays
                         data.push([-1, -1, score])
@@ -350,18 +374,38 @@ function draw()
                         bush.src = "bush.png"
                         bushes = 
                         [
-                            {id: 1, x: 775, y: 88, e: 0, r: 80, empty: false},
-                            {id: 2, x: 475, y: 88, e: 0, r: 80, empty: false},
-                            {id: 6, x: 263, y: 300, e: 0, r: 80, empty: false},
-                            {id: 3, x: 263, y: 600, e: 0, r: 80, empty: false},
-                            {id: 5, x: 475, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 775, y: 812, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 600, e: 0, r: 80, empty: false},
-                            {id: 4, x: 987, y: 300, e: 0, r: 80, empty: false}
+                            {id: 4, x: 775, y: 190, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 3, x: 475, y: 190, e: 0, r: 70, rate: 1.3, empty: false},
+                            {id: 2, x: 325, y: 450, e: 0, r: 0, rate: 1.1, empty: true},
+                            {id: 1, x: 475, y: 710, e: 0, r: 70, rate: 1.1, empty: true},
+                            {id: 0, x: 775, y: 710, e: 0, r: 70, rate: 1.2, empty: false},
+                            {id: 5, x: 925, y: 450, e: 0, r: 0, rate: 1.1, empty: false}
+                        ]
+                        return
+
+                    case 5:
+                        get_difficulty = true
+                        state = "change"
+                        ++plays
+                        data.push([-1, -1, score])
+                        audio.pause()
+                        //stress.pause()
+                        bush.src = "bush.png"
+                        bushes = 
+                        [
+                            {id: 5, x: 775, y: 88, e: 0, r: 0, rate: 1.3, empty: false},
+                            {id: 4, x: 475, y: 88, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 3, x: 263, y: 300, e: 0, r: 80, rate: 1.2, empty: false},
+                            {id: 2, x: 263, y: 600, e: 0, r: 0, rate: 1.1, empty: false},
+                            {id: 1, x: 475, y: 812, e: 0, r: 0, rate: 1.1, empty: false},
+                            {id: 0, x: 775, y: 812, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 7, x: 987, y: 600, e: 0, r: 80, rate: 1.1, empty: true},
+                            {id: 6, x: 987, y: 300, e: 0, r: 0, rate: 1.1, empty: true}
                         ]
                         return
 
                     default:
+                        get_difficulty = true
                         audio.pause()
                         //stress.pause()
                         tc = 0;
@@ -377,21 +421,10 @@ function draw()
             p_pos = {x: 625, y: 450}
             score = 0
             // Update End Condition
-            ctx.fillStyle = 'black'
-            ctx.fillText("We will now move to a new forest to forage.", col*2, row)
-            ctx.fillText("Press space to continue foraging.", col*2, row+row/4)
-            return
-        
-        case 'end':
-            if(!download)
-            {
-                download_csv(data)
-                download = true
-            }
             if(get_difficulty)
             {
                 ctx.fillStyle = 'black'
-                ctx.fillText("Please give difficulty.", col*2, row)
+                ctx.fillText("Please rate difficulty level of task (1 - 10).", col*1.7, row)
                 sub.style.display = "block"
                 difficulty.style.display = "block"
                 sub.style.display = "block"
@@ -400,6 +433,30 @@ function draw()
             }
             else
             {
+                ctx.fillStyle = 'black'
+                ctx.fillText("We will now move to a new forest to forage.", col*2, row)
+                ctx.fillText("Press space to continue foraging.", col*2, row+row/4)
+            }
+            return
+        
+        case 'end':
+            if(get_difficulty)
+            {
+                ctx.fillStyle = 'black'
+                ctx.fillText("Please rate difficulty level of the task (1 - 10).", col*1.7, row)
+                sub.style.display = "block"
+                difficulty.style.display = "block"
+                sub.style.display = "block"
+                p.style.display = "block"
+                p.textContent = difficulty.value
+            }
+            else
+            {
+                if(!download)
+                {
+                    download_csv(data)
+                    download = true
+                }
                 ctx.fillStyle = 'black'
                 ctx.fillText("Thank you for playing.", col*2, row)
             }
@@ -412,10 +469,6 @@ function draw()
             bushes.forEach(
                 rect => 
                 {
-                    ctx.beginPath()
-                    ctx.fillStyle = "black"
-                    ctx.rect(rect.x, rect.y, 100, 100)
-                    ctx.stroke()
                     ctx.drawImage(bush, rect.x, rect.y, 100, 100) // (image, pos-x, pos-y, width, height)
                 }    
             )
@@ -464,10 +517,6 @@ function draw()
             bushes.forEach(
                 rect => 
                 {
-                    ctx.beginPath()
-                    ctx.fillStyle = "black"
-                    ctx.rect(rect.x, rect.y, 100, 100)
-                    ctx.stroke()
                     ctx.drawImage(bush, rect.x, rect.y, 100, 100) // (image, pos-x, pos-y, width, height)
                 }    
             )
